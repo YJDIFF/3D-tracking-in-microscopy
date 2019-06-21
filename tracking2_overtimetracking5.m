@@ -1,58 +1,4 @@
-%% write full segmentation file
-clear
-for time=1:69
-    addr=strcat('F:\Mo\my3D_1\Tracking\',num2str(time),'\');
-    F=niftiread(strcat(addr,'Fullsize','_',num2str(time),'.nii'));
-    F2(:,:,:,time)=F;
-end
-niftiwrite(F2,strcat('F:\Mo\my3D_1\Tracking\','FullSegmentation','.nii'));
-
-%% plot single time segmetnation result
-clear
-time=60;
-load('F:\Mo\my3D_matlab\Tracking\colormap.mat','map');
-addr1=strcat('F:\Mo\my3D_matlab\Tracking\',num2str(time),'\');
-Fullsize_1 = niftiread(strcat(addr1,'Fullsize_label_',num2str(time),'.nii'));
-if time<10
-    tt=strcat('00',num2str(time));
-else
-    tt=strcat('0',num2str(time));
-end
-
-threeDimg = niftiread(strcat('F:\Mo\my3D_matlab\3Dimage\','imgz',tt,'.nii'));
-
-stats = regionprops3(Fullsize_1,'BoundingBox','VoxelList','ConvexHull','Centroid');
-Fullsize_1(Fullsize_1>1)=1;
-Fullsize_1(Fullsize_1==0)=nan;
-h=figure;
-% [X,Y,Z] = ndgrid(1:size(Fullsize_1,1), 1:size(Fullsize_1,2), 1:size(Fullsize_1,3));
-xlim([0 512]);%0-512
-ylim([0 280]);%0-280
-zlim([0 13]);%0-13
-% hold on
-% grid on
-for z=1:1:13
-  img = imrotate(threeDimg(:,:,z),0);
-  g = hgtransform('Matrix',makehgtform('translate',[0 0 z]));
-  ii=image(g,img);
-  ii.AlphaData = 0.15;
-  hold on
-end
-for i=1:height(stats)
-    
-    b=stats.VoxelList{i,1};
-    
-    k = boundary(b);
-    hold on
-%     trisurf(k,b(:,1),b(:,2),b(:,3),'Facecolor',map(i,1:3),'FaceAlpha',0.5,'Edgecolor',map(i,1:3),'EdgeAlpha',0.5)
-    trisurf(k,b(:,1),b(:,2),b(:,3),'Facecolor','r','FaceAlpha',0.5,'Edgecolor','r','EdgeAlpha',0.5)
-%     text(b(end,1),b(end,2),b(end,3),num2str(i),'Color','black', 'Rotation',+15);
-end
-set(gca, 'XDir','reverse')
-% set(gca, 'ZDir','reverse')
-view([0.5 2.0 8]);
-grid
-%%
+%% Reading cropped predictions and features and generates full-image prediction & deep feature map
 clear
 load('F:\Mo\my3D_matlab\Tracking\colormap.mat','map')
 for time=1:69
@@ -119,13 +65,8 @@ for time=1:69
 %         img=imgaussfilt(img,1);
         mor_ref(:,:,i1-13*(time-1))=img;
     end
-%     %Threshold
-%     maxIntensity=max(max(max(mor_ref)));
-%     Thre=0.4*maxIntensity;
-%     Fullsize2(mor_ref<Thre)=0;
-        
-    
-    
+            
+    %% exclude object that z=1
     stack_after=Fullsize2;
     [y, x, z] = size(Fullsize);
   
@@ -174,7 +115,8 @@ for time=1:69
     grid on
     
     
-
+    %% fill object with new assigned ID
+    %% generate 3D figure
     
     for i=1:height(stats1)
 
@@ -223,7 +165,9 @@ for time=1:69
     close(h);
 end
 disp('finish')
-%% calculating corelation 
+
+
+%% Section 2: calculating corelation and perform tracking
 clear
 load('F:\Mo\my3D_1\Tracking\colormap.mat','map')
 disp('start')
@@ -274,37 +218,37 @@ for time=1:68
     addr2=strcat('F:\Mo\my3D_1\Tracking\',t2,'\');
     Files1=dir(strcat(addr1,'*.nii'));
     Files2=dir(strcat(addr2,'*.nii'));
-%     if time<trackbackT+1 %calculating correlation
-%         for i1=1:time
-%             Fullsize_2 = niftiread(strcat(addr2,'Fullsize_label_',t2,'.nii'));
-%             Fullsize_regression_2 = niftiread(strcat(addr2,'Weights_',t2,'.nii'));
-%             t1=num2str(time+1-i1);
-%             addr1=strcat('F:\Mo\my3D_1\Tracking\',t1,'\');
-%             if i1==time
-%                 Fullsize_1 = niftiread(strcat(addr1,'Fullsize_label_',t1,'.nii'));
-%                 Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
-%             else
-%                 Fullsize_1 = niftiread(strcat(addr1,'Fullsize_2_aftertracking_',t1,'.nii'));
-%                 Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
-%             end
-%             correlation(Fullsize_1,Fullsize_2,Fullsize_regression_1,Fullsize_regression_2,t2,i1,spatial_extend_matrix);
-%         end
-%     else
-%         for i1=1:trackbackT
-%             Fullsize_2 = niftiread(strcat(addr2,'Fullsize_label_',t2,'.nii'));
-%             Fullsize_regression_2 = niftiread(strcat(addr2,'Weights_',t2,'.nii'));
-%             t1=num2str(time+1-i1);
-%             addr1=strcat('F:\Mo\my3D_1\Tracking\',t1,'\');
-%             Fullsize_1 = niftiread(strcat(addr1,'Fullsize_2_aftertracking_',t1,'.nii'));
-%             Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
-%             correlation(Fullsize_1,Fullsize_2,Fullsize_regression_1,Fullsize_regression_2,t2,i1,spatial_extend_matrix);
-%         end
-%     end
-%         
-%     
-%     
-% clear Fullsize_1 Fullsize_regression_1 Fullsize_2 Fullsize_regression_2  Fullsize_1_padding Fullsize_2_padding ...
-%         Fullsize_regression_1_padding Fullsize_regression_2_padding Fullsize_1_label Fullsize_2_label
+    if time<trackbackT+1 %calculating correlation
+        for i1=1:time
+            Fullsize_2 = niftiread(strcat(addr2,'Fullsize_label_',t2,'.nii'));
+            Fullsize_regression_2 = niftiread(strcat(addr2,'Weights_',t2,'.nii'));
+            t1=num2str(time+1-i1);
+            addr1=strcat('F:\Mo\my3D_1\Tracking\',t1,'\');
+            if i1==time
+                Fullsize_1 = niftiread(strcat(addr1,'Fullsize_label_',t1,'.nii'));
+                Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
+            else
+                Fullsize_1 = niftiread(strcat(addr1,'Fullsize_2_aftertracking_',t1,'.nii'));
+                Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
+            end
+            correlation(Fullsize_1,Fullsize_2,Fullsize_regression_1,Fullsize_regression_2,t2,i1,spatial_extend_matrix);
+        end
+    else
+        for i1=1:trackbackT
+            Fullsize_2 = niftiread(strcat(addr2,'Fullsize_label_',t2,'.nii'));
+            Fullsize_regression_2 = niftiread(strcat(addr2,'Weights_',t2,'.nii'));
+            t1=num2str(time+1-i1);
+            addr1=strcat('F:\Mo\my3D_1\Tracking\',t1,'\');
+            Fullsize_1 = niftiread(strcat(addr1,'Fullsize_2_aftertracking_',t1,'.nii'));
+            Fullsize_regression_1 = niftiread(strcat(addr1,'Weights_',t1,'.nii'));
+            correlation(Fullsize_1,Fullsize_2,Fullsize_regression_1,Fullsize_regression_2,t2,i1,spatial_extend_matrix);
+        end
+    end
+        
+    
+    
+clear Fullsize_1 Fullsize_regression_1 Fullsize_2 Fullsize_regression_2  Fullsize_1_padding Fullsize_2_padding ...
+        Fullsize_regression_1_padding Fullsize_regression_2_padding Fullsize_1_label Fullsize_2_label % clear redundent variables
     
     % plot tracking
     t1=num2str(time);
@@ -448,40 +392,9 @@ for time=1:68
     
     stack_after_label(Fullsize_2_mark>0)=0;
     
-    %[stack_after_label,orgnum]=bwlabeln(Fullsize2);
-    %stats1 = regionprops3(stack_after_BW,'BoundingBox','VoxelList','ConvexHull');
-    %stack_after(stack_after==0)=nan;
-    
-    %     stack_after_label(stack_after_label==0)=nan;
-    %     h=figure;
-    %     [X,Y,Z] = ndgrid(1:size(stack_after_label,1), 1:size(stack_after_label,2), 1:size(stack_after_label,3));
-    %     pointsize = 5;
-    %     scatter3(X(:), Y(:), Z(:), pointsize, stack_after_label(:),'filled');
-    %     colormap([0 0 0]);
-    %     % zlim([0 100]);
-    %     %colorbar;
-    %     hold on
-    
-    %stack_after_BW=logical(Fullsize_2_mark);
-    %[stack_after_label,orgnum]=bwlabeln(Fullsize_2_mark);
-    %stats = regionprops3(stack_after_BW,'BoundingBox','VoxelList','ConvexHull');
-    
-    %[stack_after_label,orgnum]=bwlabeln(Fullsize2);
-    %stats1 = regionprops3(stack_after_BW,'BoundingBox','VoxelList','ConvexHull');
-    %stack_after(stack_after==0)=nan;
-    
     Fullsize_2_mark(Fullsize_2_mark==0)=nan;
 
     h2=figure;
-%     [X,Y,Z] = ndgrid(1:size(Fullsize_2_mark,1), 1:size(Fullsize_2_mark,2), 1:size(Fullsize_2_mark,3));
-% %     set(gca,'Color','k')
-%     xlim([0 300]);
-%     ylim([0 600]);
-%     zlim([0 13]);
-%     %scatter3(X(:), Y(:), Z(:), pointsize, Fullsize_2_mark(:),'filled');
-%     colormap(map);
-%     hold on
-%     grid on
     
     
     newc=0;
@@ -850,51 +763,4 @@ xlswrite(filename,xlswriter8,8, 'A1');
 xlswrite(filename,xlswriter9,9, 'A1');
 xlswrite(filename,xlswriter10,10, 'A1');
 disp('finished')
-    %% plot the ground truth
-    addr2=strcat('D:\Mo\gt\slices-refined\bww\');
-    Files2=dir(strcat(addr2,'*.tif'));
-    I_stack=zeros(280,512,13);
-    for i1=1:length(Files2)
-        I=imread(strcat(addr2,Files2(i1).name));
-        I_stack(:,:,i1)=I;
-    end
-    stack_after_BW=logical(I_stack);
-    stats = regionprops3(stack_after_BW,'BoundingBox','VoxelList','ConvexHull','Centroid');
-    [stack_after_label,orgnum]=bwlabeln(I_stack);
-    stack_after_label(stack_after_label==0)=nan;
-    h=figure;
-    [X,Y,Z] = ndgrid(1:size(stack_after_label,1), 1:size(stack_after_label,2), 1:size(stack_after_label,3));
-    pointsize = 5;
-    scatter3(X(:), Y(:), Z(:), pointsize, stack_after_label(:),'filled');
-    colormap(map);
-    % zlim([0 100]);
-    colorbar;
-    hold on
-    grid on
-    
-    
-    
-    for i=1:height(stats)
-        Registration(i,:)=stats.Centroid(i,:);
-        b=stats.VoxelList{i,1};
-        %     for j=length(stats.ConvexHull{i,1})
-        %         plot3(a(:,2),a(:,1),a(:,3),'r');
-        k = boundary(b);
-        hold on
-        trisurf(k,b(:,2),b(:,1),b(:,3),'Facecolor',map(i,1:3),'FaceAlpha',0.1,'Edgecolor',map(i,1:3),'EdgeAlpha',0.1)
-        %         hold on
-        %     end
-        value=stack_after_label(b(end,2),b(end,1),b(end,3));
-        text(b(end,2),b(end,1),b(end,3), num2str(i), 'Rotation',+15)
-    end
-    
-    
-    hold off
-%%
-for i=1:10000
-    i1=rand();
-    i2=rand();
-    i3=rand();
-    map(i,1:3)=[i1 i2 i3];
-end
-save('F:\Mo\my3D_1\Tracking\colormap.mat','map')
+
