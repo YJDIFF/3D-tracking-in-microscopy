@@ -1,4 +1,4 @@
-%% Reading cropped predictions and features and generates full-image prediction & deep feature map
+%% Section 1: Reading cropped predictions and features and generates full-image prediction & deep feature map
 clear
 load('F:\Mo\my3D_matlab\Tracking\colormap.mat','map')
 for time=1:69
@@ -14,7 +14,7 @@ for time=1:69
     Fullsize_regression=zeros(280,512,13);
     Weights=zeros(280,512,13,20);
     %Weights=zeros(280,512,13,256);
-    for it=1:3:length(Files1)
+    for it=1:3:length(Files1) % prediction class
         clo=32*floor((it-1)/3/8)+1;
         row=35*rem((it-1)/3,8)+1;
         V = niftiread(strcat(addr,Files1(it).name));
@@ -23,7 +23,7 @@ for time=1:69
         V3= imresize3(V2, [35 32 13],'linear');
         Fullsize(row:row+34,clo:clo+31,:)=V3;
     end
-%     for it=3:3:length(Files1)
+%     for it=3:3:length(Files1) % regression score
 %         clo=32*floor((it-2)/3/8)+1;
 %         row=35*rem((it-2)/3,8)+1;
 %         V = niftiread(strcat(addr,Files1(it).name));
@@ -31,7 +31,7 @@ for time=1:69
 %         V3= imresize3(V2, [35 32 13],'linear');
 %         Fullsize_regression(row:row+34,clo:clo+31,:)=V3;
 %     end
-    for it=2:3:length(Files1)
+    for it=2:3:length(Files1) % deep feature maps
         display(it/length(Files1))
         clo=32*floor((it-2)/3/8)+1;
         row=35*rem((it-2)/3,8)+1;
@@ -101,7 +101,8 @@ for time=1:69
             stack_after_label(stack_after_label(b(i1,2),b(i1,1),b(i1,3))>0)=i;
         end
     end
-
+    
+    % draw 3D segmentation and labelling figures
     %stack_after_label(stack_after_label~=57)=0;
     stack_after_label(stack_after_label==0)=nan;
     h=figure;
